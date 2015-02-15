@@ -3,7 +3,7 @@ from sklearn import metrics, svm, decomposition
 from sklearn.linear_model import LogisticRegression
 from sklearn import datasets
 from sklearn.datasets import fetch_mldata
-from skimage import data, io, filter
+from skimage import io, filter
 from skimage.transform import resize
 from scipy import ndimage
 from sklearn.cross_validation import train_test_split
@@ -30,13 +30,29 @@ def SVM_train(data, target):
 		cost += (predicted[i] == test_labels[i])
 	print(cost/len(test_labels), cost, len(test_labels))
 
+def SVM_train_without_splitting(data, test_data, test_labels):
+	"""
+		data is digits from dataset
+	"""
+	classifier = svm.SVC(gamma=0.001)
+	classifier.fit(data.data, data.target)
+	predicted = classifier.predict(test_data)
+	lens = len(predicted)
+	cost = 0
+	for i in range(lens):
+		cost += (predicted[i] == test_labels[i])
+	print(cost/len(test_labels), cost, len(test_labels))
+
 def toy_example():
 	data = load_digits()
-	print("Clear data: ")
+	print("Clear data. Train with SVM")
 	SVM_train(data.data, data.target)
-	print("After blurred: ")
+	print("After blurred. Train with SVM")
 	data_blurred, labels = noise_images(data, 1200)
 	SVM_train(data_blurred, labels)
+	test_blurred, lables_blurred = noise_images_as_test(data, 700)
+	print("After blurred test data. Train with SVM")
+	SVM_train_without_splitting(data, test_blurred, lables_blurred)
 
 def split_data(data, pr=.85):
 	"""
@@ -54,7 +70,7 @@ def split_data(data, pr=.85):
 
 def noise_images(data, num_examples):
 	"""
-		Number of example images
+		Noise images and append to dataset
 	"""
 	if num_examples  == 0 or num_examples > len(data.data):
 		return
@@ -66,4 +82,18 @@ def noise_images(data, num_examples):
 		labels = np.hstack((labels, data.target[img]))
 	return result, labels
 
+
+def noise_images_as_test(data, num_examples):
+	"""
+		Blurred images without append to dataset
+	"""
+	if num_examples  == 0 or num_examples > len(data.data):
+		return
+	result = np.ndarray((data.data[0].shape))
+	labels = np.ndarray([])
+	for img in range(num_examples):
+		gaussian = ndimage.gaussian_filter(data.data[img], sigma=3)
+		result = np.vstack((result,gaussian))
+		labels = np.hstack((labels, data.target[img]))
+	return result, labels
 toy_example()

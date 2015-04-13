@@ -2,6 +2,9 @@ import numpy as np
 from sklearn import metrics, svm, decomposition,linear_model
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import BernoulliRBM
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.manifold import Isomap
+from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn import datasets
 from sklearn.datasets import fetch_mldata
@@ -48,6 +51,13 @@ def RBM_train(data, target):
 	predicted = classifier.predict(test_data)
 	get_cost(predicted, test_labels)
 
+def RF_train(data, target):
+	""" Train with Ranfom Forest """
+	train_data, test_data, train_labels, test_labels = train_test_split(data, target, test_size=0.33, random_state=42)
+	classifier = RandomForestClassifier(n_estimators=30, max_depth=None)
+	classifier.fit(train_data, train_labels)
+	predicted = classifier.predict(test_data)
+	get_cost(predicted, test_labels)
 
 def SVM_train_without_splitting(data, test_data, test_labels):
 	"""
@@ -62,6 +72,17 @@ def toy_example():
 	data = load_digits()
 	print("Clear data. Train with SVM")
 	SVM_train(data.data, data.target)
+	print("Clear data. PCA + SVM")
+	X = PCA_reduction(data.data, 10)
+	SVM_train(X, data.target)
+	print("Clear data. Isomap with 20 neighbors + SVM")
+	X = Isomap_reduction(data.data, 20, 10)
+	SVM_train(X, data.target)
+	print("Clear data. Isomap with 40 neighbors + SVM")
+	X = Isomap_reduction(data.data, 40, 10)
+	SVM_train(X, data.target)
+	print("Clear data. Train with Random Forest")
+	RF_train(data.data, data.target)
 	print("After blurred. Train with SVM")
 	data_blurred, labels = noise_images(data, 1200)
 	SVM_train(data_blurred, labels)
@@ -91,6 +112,14 @@ def split_data(data, pr=.85):
 	pre = [(img, target) for img, target in zip(data.data, data.target)]
 	return np.take(pre, trainidx, axis=0).tolist(), np.take(pre, testidx, axis=0).tolist()
 
+
+def Isomap_reduction(data, neighbors, num_components):
+	""" Dimension reduction with Isomap """
+	return Isomap(neighbors, n_components=num_components).fit_transform(data)
+
+def PCA_reduction(data, num_components):
+	""" Dimension reduction with PCA """
+	return PCA(n_components=num_components).fit_transform(data)
 
 def noise_images(data, num_examples):
 	"""

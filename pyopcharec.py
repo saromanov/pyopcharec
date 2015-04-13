@@ -3,6 +3,7 @@ from sklearn import metrics, svm, decomposition,linear_model
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import BernoulliRBM
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.manifold import Isomap
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -98,6 +99,7 @@ def toy_example():
 		print(" Corruption value {0}".format(p))
 		SVM_train_without_splitting(data, images, labels)
 		p += 0.1
+	stack_of_classifiers(data.data,data.target, svm.SVC(gamma=0.001), KNeighborsClassifier(), LogisticRegression())
 
 def split_data(data, pr=.85):
 	"""
@@ -160,5 +162,20 @@ def corrupt_images(data,num_examples, p=0.3):
 		labels = np.hstack((labels, data.target[img]))
 	return result, labels
 
+
+def stack_of_classifiers(data, target, *args):
+	train_data, test_data, train_labels, test_labels = train_test_split(data, target, test_size=0.33, random_state=42)
+	result = []
+	for classifier in args:
+		classifier.fit(train_data, train_labels)
+		result.append(classifier.predict(test_data))
+	shape = result[0].shape[0]
+	new_labels = []
+	for i in range(shape):
+		arr = []
+		for res in result:
+			arr.append(res[i])
+		new_labels.append(max(set(arr), key=arr.count))
+	get_cost(new_labels, test_labels)
 
 toy_example()
